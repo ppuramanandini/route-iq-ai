@@ -1,0 +1,6 @@
+project-includes = ["backend"]
+search-path = ["./backend"]
+python-platform = "win32"
+python-version = "3.11.0"
+python-interpreter-path = "C:\\Users\\ppura\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
+infer-with-first-use = false
