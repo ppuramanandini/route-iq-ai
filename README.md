@@ -1,12 +1,37 @@
 # SwitchRouteIQ - Autonomous Payment Routing Infrastructure
+'''Don't wait for payment failure. Detect and prevent it'''
+
+Problem
+
+Modern payment systems rely on multiple gateways, but many still use static routing rules. When a gateway becomes slow, overloaded, degraded, or unavailable, transactions may continue to be routed through it.
+
+This can result in:
+
+Payment failures and timeouts - Transactions fail when the selected gateway cannot process them reliably.
+Increased latency - Slow gateways delay payment confirmation and checkout completion.
+Repeated retries - Failed transactions may be retried unnecessarily, increasing load and processing time.
+Duplicate-debit risk - Retrying or switching gateways without proper transaction handling can result in multiple debit attempts.
+Revenue loss - Failed payments can directly lead to lost purchases and abandoned transactions.
+
+**Impact on Customers**
+Poor payment experience - Failed or delayed payments create frustration during checkout.
+Payment uncertainty - Customers may not know whether a failed transaction was actually processed.
+Multiple payment attempts - Customers may retry when the payment status is unclear.
+Loss of trust - Frequent payment issues can reduce confidence in the platform.
+
+### Impact on Merchants
+Lost sales - Failed transactions can prevent successful purchases.
+Higher support workload - Payment failures generate additional customer complaints and support requests.
+Reconciliation challenges - Multiple attempts and uncertain payment states make transaction tracking more difficult.
+Reduced customer retention - Repeated payment failures can negatively affect the overall customer experience.
+Core Problem: Traditional routing is often reactive rather than adaptive, making it difficult to respond to real-time gateway conditions and maintain reliable payment processing.
+
 
 SwitchRouteIQ is an autonomous multi-gateway payment routing platform designed to keep digital payments reliable even when payment gateways experience latency, timeouts, errors, or temporary degradation.
 The platform continuously monitors gateway health, evaluates multiple routing options, validates candidate routes using zero-trust policies, executes payments safely, and learns from historical routing outcomes to refine future decisions.
 
 🌐 Live Demo
 Frontend: https://ppuramanandini.github.io/route-iq-ai/
-
-The GitHub Pages deployment provides the frontend demo. Backend APIs are currently designed to run separately.
 
 Built using:
 - **Frontend**: HTML5, CSS (exact production design tokens, glassmorphism, animations), JavaScript, React.js (Vite), Lucide Icons, and Recharts.
