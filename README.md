@@ -7,23 +7,18 @@ Modern payment systems rely on multiple gateways, but many still use static rout
 
 **This can result in:**
 
-Payment failures and timeouts - Transactions fail when the selected gateway cannot process them reliably.
-Increased latency - Slow gateways delay payment confirmation and checkout completion.
-Repeated retries - Failed transactions may be retried unnecessarily, increasing load and processing time.
-Duplicate-debit risk - Retrying or switching gateways without proper transaction handling can result in multiple debit attempts.
-Revenue loss - Failed payments can directly lead to lost purchases and abandoned transactions.
-
-**Impact on Customers**
-**Poor payment experience** - Failed or delayed payments create frustration during checkout.
-**Payment uncertainty **- Customers may not know whether a failed transaction was actually processed.
-**Multiple payment attempts** - Customers may retry when the payment status is unclear.
-**Loss of trust** - Frequent payment issues can reduce confidence in the platform.
+**Payment failures and timeouts** - Transactions fail when the selected gateway cannot process them reliably.
+**Increased latency** - Slow gateways delay payment confirmation and checkout completion.
+**Repeated retries **- Failed transactions may be retried unnecessarily, increasing load and processing time.
+**Duplicate-debit risk** - Retrying or switching gateways without proper transaction handling can result in multiple debit attempts.
+**Revenue loss** - Failed payments can directly lead to lost purchases and abandoned transactions.
 
 **Solution**
+
 SwitchRouteIQ is an autonomous multi-gateway payment routing platform designed to keep digital payments reliable even when payment gateways experience latency, timeouts, errors, or temporary degradation.
 The platform continuously monitors gateway health, evaluates multiple routing options, validates candidate routes using zero-trust policies, executes payments safely, and learns from historical routing outcomes to refine future decisions.
 
-🌐** Live Demo**
+🌐Live Demo
 Frontend: https://ppuramanandini.github.io/route-iq-ai/
 
 Built using:
