@@ -1,6 +1,12 @@
-# SwitchRouteIQ — Autonomous Payment Routing Infrastructure
+# SwitchRouteIQ - Autonomous Payment Routing Infrastructure
 
-SwitchRouteIQ is a resilient, autonomous multi-gateway payment routing system built with a 5-agent architecture, real-time gateway telemetry, zero-trust candidate route validation, and safe fallback with cryptographic idempotency tracking.
+SwitchRouteIQ is an autonomous multi-gateway payment routing platform designed to keep digital payments reliable even when payment gateways experience latency, timeouts, errors, or temporary degradation.
+The platform continuously monitors gateway health, evaluates multiple routing options, validates candidate routes using zero-trust policies, executes payments safely, and learns from historical routing outcomes to refine future decisions.
+
+🌐 Live Demo
+Frontend: https://ppuramanandini.github.io/route-iq-ai/
+
+The GitHub Pages deployment provides the frontend demo. Backend APIs are currently designed to run separately.
 
 Built using:
 - **Frontend**: HTML5, CSS (exact production design tokens, glassmorphism, animations), JavaScript, React.js (Vite), Lucide Icons, and Recharts.
