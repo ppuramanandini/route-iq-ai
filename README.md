@@ -110,6 +110,7 @@ route-iq-ai/
 ```
 
 ---
+<img width="1024" height="1536" alt="drawIO" src="https://github.com/user-attachments/assets/bbff45ae-8232-4eb9-bd24-5b4fe215ca00" />
 
 ## Component Views & Routes
 
