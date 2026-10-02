@@ -23,6 +23,12 @@ def get_cached_gateway_state(gateway_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def invalidate_cached_gateway_state(gateway_id: str) -> None:
+    gateway_id = gateway_id.upper()
+    cache_client.delete(f"{GATEWAY_STATE_PREFIX}{gateway_id}")
+    cache_client.delete(f"{GATEWAY_HEALTH_PREFIX}{gateway_id}")
+
+
 def set_cached_gateway_health(gateway_id: str, health_score: int, ttl: int = GATEWAY_TTL) -> None:
     key = f"{GATEWAY_HEALTH_PREFIX}{gateway_id.upper()}"
     cache_client.set(key, health_score, ex=ttl)

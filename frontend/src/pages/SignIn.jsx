@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Lock, ShieldCheck, Zap, Server, Activity } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { Logo } from "../components/Logo";
+import "./SignIn.css";
 
 const ROLES = [
   "Merchant Admin",
@@ -9,7 +10,7 @@ const ROLES = [
   "Security Administrator"
 ];
 
-export function SignIn({ onSignInSuccess }) {
+export function SignIn({ onSignInSuccess, onBack }) {
   const [email, setEmail] = useState("ops@foodapp.in");
   const [role, setRole] = useState(ROLES[1]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,85 +35,59 @@ export function SignIn({ onSignInSuccess }) {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr] bg-background text-foreground">
+    <div className="signin-page grid min-h-screen lg:grid-cols-[1.1fr_1fr] bg-background text-foreground">
       {/* Left branding pane */}
-      <div className="relative hidden flex-col justify-between border-r border-border p-12 lg:flex">
-        <div className="flex items-center gap-3">
-          <Logo size={34} />
-          <span className="text-lg font-bold tracking-[0.14em]">
-            SWITCHROUTE<span className="text-cyan">IQ</span>
-          </span>
-        </div>
-
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-cyan">
-            Payment orchestration · B2B
-          </p>
-          <h1 className="mt-4 max-w-xl text-5xl font-semibold leading-[1.05] tracking-tight">
-            Don't wait for payment failure.{" "}
-            <span className="text-muted-foreground">Detect and prevent it.</span>
-          </h1>
-          <p className="mt-5 max-w-lg text-muted-foreground leading-relaxed">
-            SwitchRouteIQ sits between your backend and every configured gateway — observing telemetry, selecting routes, validating zero-trust compliance, and executing safe fallback before a payment fails.
-          </p>
-
-          <div className="mt-8 grid gap-4 max-w-lg">
-            <div className="flex items-start gap-3 rounded border border-border/60 bg-card/40 p-3.5">
-              <Zap className="h-5 w-5 text-cyan shrink-0 mt-0.5" />
-              <div>
-                <div className="font-semibold text-sm">Autonomous Self-Healing</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Detects gateway degradation via real-time telemetry and automatically executes safe fallback routing.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 rounded border border-border/60 bg-card/40 p-3.5">
-              <Activity className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <div>
-                <div className="font-semibold text-sm">Traffic What-If Simulation</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Simulates candidate routing strategies against downstream capacity and cost before touching live traffic.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 rounded border border-border/60 bg-card/40 p-3.5">
-              <Server className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-              <div>
-                <div className="font-semibold text-sm">Payment Safety & Idempotency</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Guarantees zero duplicate debits during timeout failover via cryptographic idempotency tracking.
-                </div>
-              </div>
-            </div>
+      <div className="signin-visual-pane relative hidden flex-col justify-between border-r border-border p-12 lg:flex">
+        <div className="flex items-center justify-between">
+          <div
+            onClick={onBack}
+            className={`signin-brand flex items-center ${onBack ? "cursor-pointer hover:opacity-90" : ""}`}
+          >
+            <Logo size={34} />
+            <span className="signin-brand-name">
+              SWITCHROUTE<span className="text-cyan">IQ</span>
+            </span>
           </div>
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="signin-back-link font-mono cursor-pointer"
+            >
+              ← Back to Home
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-          <span>SWITCHROUTEIQ</span>
-          <span>Autonomous Payment Routing Infrastructure</span>
+        <div className="signin-visual-copy">
+          <p className="signin-visual-kicker">INTELLIGENT PAYMENT ROUTING</p>
+          <p className="signin-visual-statement">Route every payment through the safest available path.</p>
+        </div>
+
+        <div className="signin-operational">
+          <span className="signin-operational-dot" />
+          <span>PAYMENT ROUTING INFRASTRUCTURE</span>
+          <span className="text-success">OPERATIONAL</span>
         </div>
       </div>
 
       {/* Right sign-in form pane */}
-      <div className="flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-6">
-          <div className="flex items-center gap-3 lg:hidden mb-6">
-            <Logo size={32} />
-            <span className="text-lg font-bold tracking-[0.14em]">
-              SWITCHROUTE<span className="text-cyan">IQ</span>
-            </span>
+      <div className="signin-form-pane flex items-center justify-center p-6 sm:p-12">
+        <div className="signin-form-card w-full max-w-md">
+          <div className="signin-mobile-top lg:hidden">
+            <div className="signin-brand flex items-center">
+              <Logo size={30} />
+              <span className="signin-brand-name">SWITCHROUTE<span className="text-cyan">IQ</span></span>
+            </div>
+            {onBack && <button type="button" onClick={onBack} className="signin-back-link font-mono">← Back to Home</button>}
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Sign in to console</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Access payment routing infrastructure and live telemetry
-            </p>
+            <h2 className="signin-form-heading">Sign in to console</h2>
+            <p className="signin-form-subtitle">Access payment routing infrastructure</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="signin-form-fields">
             <div className="space-y-1.5">
               <label className="block font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 Corporate Email
@@ -149,7 +124,7 @@ export function SignIn({ onSignInSuccess }) {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex w-full items-center justify-center gap-2 rounded bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-70"
+              className="signin-submit flex w-full items-center justify-center gap-2"
             >
               <Lock className="h-4 w-4" />
               {isLoading ? "Authenticating…" : "Sign in"}
@@ -158,13 +133,13 @@ export function SignIn({ onSignInSuccess }) {
             <button
               type="button"
               onClick={() => authenticate("demo@switchrouteiq.io", role)}
-              className="w-full rounded border border-border py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground hover:border-cyan hover:text-cyan transition-colors"
+              className="signin-demo w-full rounded border border-border py-2 font-mono text-[11px] uppercase"
             >
               Demo access · sandbox
             </button>
           </form>
 
-          <p className="mt-6 flex items-center gap-2 font-mono text-[10px] text-muted-foreground justify-center">
+          <p className="signin-security-note flex items-center gap-2 font-mono justify-center">
             <ShieldCheck className="h-3.5 w-3.5 text-success" />
             SSO · mTLS · SOC 2 controls (simulated environment)
           </p>

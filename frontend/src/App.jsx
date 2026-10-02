@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { SimProvider } from "./context/SimContext";
 import { Layout } from "./components/Layout";
+import { LandingPage } from "./pages/LandingPage";
 import { SignIn } from "./pages/SignIn";
 import { CommandCenter } from "./pages/CommandCenter";
 import { LiveRouting } from "./pages/LiveRouting";
@@ -17,17 +18,22 @@ import { Settings } from "./pages/Settings";
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
-    return window.location.pathname === "/" ? "/command-center" : window.location.pathname;
+    return window.location.pathname === "/" ? "/" : window.location.pathname;
   });
 
   const [hasSession, setHasSession] = useState(() => {
     return Boolean(sessionStorage.getItem("sriq_session"));
   });
 
+  const [showLogin, setShowLogin] = useState(() => {
+    return window.location.pathname === "/login";
+  });
+
   useEffect(() => {
     const onPopState = () => {
       const path = window.location.pathname;
       setCurrentPath(path);
+      setShowLogin(path === "/login");
       setHasSession(Boolean(sessionStorage.getItem("sriq_session")));
     };
     window.addEventListener("popstate", onPopState);
@@ -38,6 +44,7 @@ export default function App() {
     if (path === "/") {
       sessionStorage.removeItem("sriq_session");
       setHasSession(false);
+      setShowLogin(false);
       setCurrentPath("/");
       window.history.pushState({}, "", "/");
       return;
@@ -49,12 +56,27 @@ export default function App() {
 
   const handleSignInSuccess = (targetPath = "/command-center") => {
     setHasSession(true);
+    setShowLogin(false);
     navigateTo(targetPath);
   };
 
-  // If path is root or no session, show Sign In page
-  if (currentPath === "/" || !hasSession) {
-    return <SignIn onSignInSuccess={handleSignInSuccess} />;
+  const handleOpenLogin = () => {
+    setShowLogin(true);
+    window.history.pushState({}, "", "/login");
+  };
+
+  const handleBackToLanding = () => {
+    setShowLogin(false);
+    setCurrentPath("/");
+    window.history.pushState({}, "", "/");
+  };
+
+  // If no active session, show Landing Page or Login page
+  if (!hasSession) {
+    if (showLogin || currentPath === "/login") {
+      return <SignIn onSignInSuccess={handleSignInSuccess} onBack={handleBackToLanding} />;
+    }
+    return <LandingPage onAccessConsole={handleOpenLogin} />;
   }
 
   const renderPage = () => {

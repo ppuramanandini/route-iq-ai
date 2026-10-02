@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { Logo } from "./Logo";
 import { StatusDot } from "./StatusDot";
 import { useSim } from "../context/SimContext";
+import "./console.css";
 
 export const NAV_LINKS = [
   ["/command-center", "Command Center"],
@@ -44,9 +45,9 @@ export function Layout({ currentPath, onNavigate, children }) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
+    <div className="console-shell min-h-screen bg-background text-foreground flex flex-col justify-between">
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-6 px-5 py-2.5">
+        <div className="console-header-top flex items-center justify-between gap-6 px-5 py-2.5">
           <div className="flex items-center gap-6">
             <button
               onClick={() => onNavigate("/command-center")}
@@ -90,13 +91,14 @@ export function Layout({ currentPath, onNavigate, children }) {
         </div>
 
         {/* Horizontal Navigation bar */}
-        <nav className="flex gap-0.5 overflow-x-auto px-3 scrollbar-none border-t border-border/40">
+        <nav className="console-nav flex gap-0.5 overflow-x-auto px-3 scrollbar-none border-t border-border/40">
           {NAV_LINKS.map(([path, label]) => {
             const isActive = currentPath === path;
             return (
               <button
                 key={path}
                 onClick={() => onNavigate(path)}
+                aria-current={isActive ? "page" : undefined}
                 className={`whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ${
                   isActive
                     ? "border-primary text-foreground"
@@ -117,11 +119,11 @@ export function Layout({ currentPath, onNavigate, children }) {
         )}
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-5 py-6">
-        {children}
+      <main className="console-content mx-auto w-full max-w-[1800px] flex-1 px-5 py-6">
+        <div className="console-page">{children}</div>
       </main>
 
-      <footer className="border-t border-border/30 px-5 py-6 font-mono text-[10px] text-muted-foreground">
+      <footer className="console-footer border-t border-border/30 px-5 py-6 font-mono text-[10px] text-muted-foreground">
         All gateways, transactions and amounts are simulated for demonstration. No real bank transactions are processed.
       </footer>
     </div>

@@ -84,9 +84,9 @@ class TelemetryAgent:
         """
         # Base starts from success rate (0-100)
         score = success_rate
-        # Latency penalty: penalize latencies above 250ms
-        if latency_ms > 250:
-            latency_penalty = min(30, (latency_ms - 250) / 15.0)
+        # Latency penalty: only materially penalize sustained high latency, not short spikes
+        if latency_ms > 400:
+            latency_penalty = min(20, (latency_ms - 400) / 18.0)
             score -= latency_penalty
         # Timeout penalty: timeouts are severe (2x weight)
         score -= (timeouts_pct * 2.0)
@@ -151,16 +151,19 @@ class TelemetryAgent:
 
         new_health = self.compute_health_score(new_success, new_latency, new_errors, new_timeouts)
         risk = "HIGH" if new_health < 80 or new_latency > 600 else "MEDIUM" if new_health < 92 else "LOW"
+        p95_ms = max(new_latency + 40, round(new_latency * 1.25))
+        p99_ms = max(p95_ms + 60, round(new_latency * 1.55))
 
         c.execute("""
         UPDATE gateways
-        SET health = ?, success_rate = ?, latency_ms = ?, p95_ms = ?, timeouts_pct = ?, errors_pct = ?, risk_level = ?
+        SET health = ?, success_rate = ?, latency_ms = ?, p95_ms = ?, p99_ms = ?, timeouts_pct = ?, errors_pct = ?, risk_level = ?
         WHERE id = ?
         """, (
             new_health,
             new_success,
             new_latency,
-            round(new_latency * 1.9),
+            p95_ms,
+            p99_ms,
             new_timeouts,
             new_errors,
             risk,
@@ -175,6 +178,8 @@ class TelemetryAgent:
             "health": new_health,
             "success_rate": new_success,
             "latency_ms": new_latency,
+            "p95_ms": p95_ms,
+            "p99_ms": p99_ms,
             "timeouts_pct": new_timeouts,
             "errors_pct": new_errors,
             "risk_level": risk,

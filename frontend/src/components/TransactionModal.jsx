@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CheckCircle, AlertTriangle, XCircle, ShieldCheck } from "lucide-react";
+import { X, ShieldCheck } from "lucide-react";
 import { formatTime, formatInr } from "../lib/utils";
 import { RiskBadge } from "./RiskBadge";
 import { StatusBadge } from "./StatusBadge";

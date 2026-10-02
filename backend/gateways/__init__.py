@@ -11,8 +11,9 @@ _adapters: Dict[str, BaseGatewayAdapter] = {
 }
 
 def get_gateway_adapter(gateway_id: str) -> BaseGatewayAdapter:
-    gid = gateway_id.upper()
+    if not isinstance(gateway_id, str):
+        raise ValueError(f"Unsupported gateway ID: {gateway_id}")
+    gid = gateway_id.strip().upper()
     if gid in _adapters:
         return _adapters[gid]
-    # Default to Razorpay adapter if unknown
-    return _adapters["A"]
+    raise ValueError(f"Unsupported gateway ID: {gateway_id}")

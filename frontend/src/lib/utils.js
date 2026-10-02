@@ -31,7 +31,8 @@ export function evaluateStrategy(degradeA, shiftB, maxShift = 40, tps = 1842) {
   const bTraffic = 5 + shiftB;
   const aSuccess = 98.5 - degradeA * 0.45;
   const bSuccess = 98.8 - Math.max(0, bTraffic - 45) * 0.25;
-  const overallSuccess = (aTraffic * aSuccess + bTraffic * bSuccess + 482.5) / 100;
+  const cSuccess = 96.1;
+  const overallSuccess = (aTraffic * aSuccess + bTraffic * bSuccess + cTraffic * cSuccess) / 100;
   const aLatency = 180 + degradeA * 20;
   const bLatency = 182 + Math.max(0, bTraffic - 45) * 9;
   const overallLatency = (aTraffic * aLatency + bTraffic * bLatency + 1550) / 100;
@@ -53,8 +54,8 @@ export function evaluateStrategy(degradeA, shiftB, maxShift = 40, tps = 1842) {
 }
 
 export function getRecommendedStrategy(strategies) {
-  const valid = strategies.filter((s) => s.withinSla);
-  return [...(valid.length ? valid : strategies)].sort((a, b) => b.success - a.success)[0];
+  const valid = strategies.filter((strategy) => strategy.withinSla && strategy.withinPolicy);
+  return valid.sort((a, b) => b.success - a.success)[0] || null;
 }
 
 export const GATEWAY_COLORS = {

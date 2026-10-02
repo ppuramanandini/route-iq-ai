@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, X, ShieldAlert, Zap, Cpu, RefreshCw, Lock } from "lucide-react";
+import { Check, X, Zap, Cpu, RefreshCw, Lock } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { Card } from "../components/Card";
 import { IncidentControls } from "../components/IncidentControls";
@@ -12,6 +12,15 @@ export function AutonomousRecovery() {
         sub="Why proactive telemetry, zero-trust validation, and safe fallback beat static routing rules."
         right={<IncidentControls />}
       />
+
+      <section className="console-recovery-pipeline grid gap-2 md:grid-cols-3 xl:grid-cols-6" aria-label="Autonomous recovery process">
+        {["Detection", "Validation", "State Check", "Idempotency", "Fallback", "Recovery Complete"].map((stage, index) => (
+          <div key={stage} className="flex min-h-[72px] items-center gap-3 rounded-md border border-border bg-card px-3 py-3">
+            <span className="font-mono text-xs font-semibold text-cyan">0{index + 1}</span>
+            <span className="text-sm font-medium text-foreground">{stage}</span>
+          </div>
+        ))}
+      </section>
 
       {/* High-level comparison table */}
       <Card title="Architecture Comparison: Static Rules vs Autonomous Intelligence">

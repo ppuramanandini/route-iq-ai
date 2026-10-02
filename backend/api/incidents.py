@@ -3,6 +3,8 @@ import time
 import uuid
 from fastapi import APIRouter
 from database import get_connection
+from agents.telemetry_agent import TelemetryAgent
+from cache.gateway_state import invalidate_cached_gateway_state
 
 router = APIRouter(tags=["Incidents"])
 
@@ -26,11 +28,13 @@ def trigger_incident_v1():
     c = conn.cursor()
 
     # Degrade Gateway A
+    health = TelemetryAgent.compute_health_score(90.8, 780, 7.1, 6.1)
     c.execute("""
     UPDATE gateways
-    SET risk_level = 'HIGH', success_rate = 90.8, latency_ms = 780, errors_pct = 7.1, timeouts_pct = 6.1
+    SET health = ?, risk_level = 'HIGH', success_rate = 90.8, latency_ms = 780,
+        p95_ms = 1482, p99_ms = 2418, errors_pct = 7.1, timeouts_pct = 6.1
     WHERE id = 'A'
-    """)
+    """, (health,))
 
     timeline = [
         {"ts": now, "label": "Gateway degradation detected from observed telemetry"},
@@ -77,4 +81,5 @@ def trigger_incident_v1():
 
     conn.commit()
     conn.close()
+    invalidate_cached_gateway_state("A")
     return {"status": "INCIDENT_TRIGGERED", "incident_id": "INC-2048"}

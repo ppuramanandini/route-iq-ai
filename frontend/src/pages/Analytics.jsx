@@ -14,6 +14,7 @@ import {
 import { useSim } from "../context/SimContext";
 import { SectionHeader } from "../components/SectionHeader";
 import { Card } from "../components/Card";
+import { StatCard } from "../components/StatCard";
 
 export function Analytics() {
   const { history } = useSim();
@@ -35,6 +36,13 @@ export function Analytics() {
     });
   }, []);
 
+  const latest = history.at(-1) || {};
+  const averageLatency = [latest.latA, latest.latB, latest.latC]
+    .filter(Number.isFinite)
+    .reduce((sum, latency, _, values) => sum + latency / values.length, 0);
+  const recoveredThisPeriod = thirtyDayData.reduce((sum, day) => sum + day.recoveries, 0);
+  const savedThisPeriod = thirtyDayData.reduce((sum, day) => sum + day.saved, 0);
+
   const tooltipStyle = {
     background: "var(--card)",
     border: "1px solid var(--border)",
@@ -51,7 +59,15 @@ export function Analytics() {
         sub="Operational intelligence across gateways, routing decisions, recoveries and cost optimization."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="console-kpi-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard label="Success Rate" tone="good" sub="Latest telemetry interval">{(latest.overall ?? 0).toFixed(1)}%</StatCard>
+        <StatCard label="Transaction Throughput" tone="cyan" sub="Current simulated rate">{(latest.tps ?? 0).toLocaleString()} tx/s</StatCard>
+        <StatCard label="Average Latency" tone="default" sub="Across active gateways">{Math.round(averageLatency)} ms</StatCard>
+        <StatCard label="Recoveries · 30d" tone="good" sub="Existing analytics series">{recoveredThisPeriod.toLocaleString()}</StatCard>
+        <StatCard label="Cost Optimized · 30d" tone="warn" sub="Existing analytics series">₹{savedThisPeriod.toLocaleString()}</StatCard>
+      </div>
+
+      <div className="console-analytics-grid grid gap-6">
         {/* 1. Payment Success Trend 30d */}
         <ChartCard title="Payment Success Trend · 30d">
           <AreaChart data={thirtyDayData}>

@@ -3,7 +3,12 @@ import logging
 import uuid
 from typing import Dict, Any, List, Optional
 from monitoring.metrics import metrics
-from cache.idempotency import store_idempotent_transaction, get_idempotent_transaction
+from cache.idempotency import (
+    acquire_idempotency_lock,
+    get_idempotent_transaction,
+    release_idempotency_lock,
+    store_idempotent_transaction
+)
 
 from .telemetry_agent import TelemetryAgent
 from .route_selection_agent import RouteSelectionAgent
@@ -31,6 +36,54 @@ class SwitchRouteIQOrchestrator:
         self.agent_5 = AuditAgent()
 
     def route_payment(
+        self,
+        payment_request: Dict[str, Any],
+        simulate_behavior: Optional[str] = None
+    ) -> Dict[str, Any]:
+        idempotency_key = payment_request.get("idempotency_key")
+        if not idempotency_key:
+            idempotency_key = f"key_{int(time.time() * 1000)}"
+            payment_request["idempotency_key"] = idempotency_key
+
+        request_lock_key = f"orchestrator:{idempotency_key}"
+        if not acquire_idempotency_lock(request_lock_key, ttl=60):
+            metrics.inc_requests()
+            metrics.inc_duplicate_prevented()
+            existing_tx = get_idempotent_transaction(idempotency_key)
+            return self._duplicate_response(existing_tx, in_progress=existing_tx is None)
+
+        try:
+            return self._route_payment_locked(payment_request, simulate_behavior)
+        finally:
+            release_idempotency_lock(request_lock_key)
+
+    @staticmethod
+    def _duplicate_response(
+        existing_tx: Optional[Dict[str, Any]],
+        in_progress: bool = False
+    ) -> Dict[str, Any]:
+        return {
+            "transaction_id": existing_tx.get("transaction_id") if existing_tx else None,
+            "status": "DUPLICATE_PREVENTED",
+            "duplicate_detected": True,
+            "message": (
+                "Payment is already processing for this idempotency key"
+                if in_progress
+                else "Payment already processed for this idempotency key"
+            ),
+            "final_status": existing_tx.get("final_status", "DUPLICATE_PREVENTED") if existing_tx else "DUPLICATE_PREVENTED",
+            "primary_gateway": existing_tx.get("primary_gateway", "A") if existing_tx else None,
+            "fallback_gateway": existing_tx.get("fallback_gateway", "B") if existing_tx else None,
+            "final_gateway": existing_tx.get("final_gateway") if existing_tx else None,
+            "validation_status": "PASS" if existing_tx else "IN_PROGRESS",
+            "revision_count": existing_tx.get("revision_count", 0) if existing_tx else 0,
+            "fallback_triggered": existing_tx.get("fallback_triggered", False) if existing_tx else False,
+            "routing_reason": "Idempotent response retrieved from fast cache" if existing_tx else "Concurrent duplicate request blocked",
+            "agent_trace": existing_tx.get("agent_trace", []) if existing_tx else [],
+            "cached": existing_tx is not None
+        }
+
+    def _route_payment_locked(
         self,
         payment_request: Dict[str, Any],
         simulate_behavior: Optional[str] = None

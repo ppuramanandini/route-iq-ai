@@ -67,10 +67,16 @@ class RouteValidationAgent:
         # 2. SLA Latency Validation
         latency = primary_info.get("latency_ms", 180)
         p95 = primary_info.get("p95_ms", latency)
-        if latency > sla_limit or p95 > (sla_limit * 1.3):
+        p95_limit = sla_limit * 1.35
+        if latency > sla_limit:
             failed_checks.append("SLA_LATENCY_VIOLATION")
             failure_reasons.append(
                 f"Primary Gateway {primary_gw} violates latency SLA ({latency}ms > {sla_limit}ms SLA limit)"
+            )
+        elif p95 > p95_limit:
+            failed_checks.append("SLA_LATENCY_VIOLATION")
+            failure_reasons.append(
+                f"Primary Gateway {primary_gw} exceeds p95 latency policy ({p95}ms > {p95_limit:.0f}ms allowed)"
             )
 
         # 3. Minimum Health Threshold Check
@@ -96,7 +102,8 @@ class RouteValidationAgent:
         idempotency_key = transaction_context.get("idempotency_key")
         if idempotency_key:
             existing = get_idempotent_transaction(idempotency_key)
-            if existing and existing.get("status") in ["SUCCESS", "FALLBACK_SUCCESS"]:
+            existing_status = existing.get("final_status", existing.get("status")) if existing else None
+            if existing and existing_status in ["SUCCESS", "FALLBACK_SUCCESS"]:
                 # Idempotency duplicate detected
                 return {
                     "validation_status": "DUPLICATE_PREVENTED",

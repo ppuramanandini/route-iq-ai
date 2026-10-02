@@ -14,100 +14,113 @@ export function CommandCenter() {
   const {
     overall,
     routingLatency,
+    tps,
     running,
     autoRecovered,
-    dupPrevented,
     gateways,
-    log
+    log,
+    incidents
   } = useSim();
 
   const isDegraded = gateways.A.risk === "HIGH" || gateways.B.risk === "HIGH" || gateways.C.risk === "HIGH";
+  const activeGatewayCount = Object.values(gateways).filter((gateway) => gateway.risk !== "HIGH").length;
 
   return (
     <div className="space-y-6">
       <SectionHeader
         title="Command Center"
-        sub="Executive operational view of payment success, routing latency, gateway risk and autonomous recovery."
+        sub="Real-time payment routing operations and agent activity."
         right={<IncidentControls />}
       />
 
-      {/* 6 Top Metric Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="console-kpi-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard label="Transaction Throughput" tone="cyan" sub="Live payment traffic">
+          <AnimatedNumber value={tps} /> <span className="text-sm font-medium text-muted-foreground">tx/s</span>
+        </StatCard>
         <StatCard label="Success Rate" tone="good" sub="Target: > 98.0%">
           <AnimatedNumber value={overall} decimals={1} suffix="%" />
         </StatCard>
-
-        <StatCard label="Routing Latency" tone="default" sub="SLA limit: 500ms">
-          <AnimatedNumber value={routingLatency} suffix="ms" />
+        <StatCard label="Active Gateways" tone={isDegraded ? "warn" : "good"} sub="Processors available">
+          <span>{activeGatewayCount} <span className="text-sm font-medium text-muted-foreground">/ 3</span></span>
         </StatCard>
-
-        <StatCard
-          label="System State"
-          tone={running ? "bad" : isDegraded ? "warn" : "good"}
-          sub={running ? "Self-healing active" : "Normal operation"}
-        >
-          <span className="text-xl font-bold">
-            {running ? "MITIGATING" : isDegraded ? "DEGRADED" : "NOMINAL"}
-          </span>
-        </StatCard>
-
-        <StatCard label="Auto-Recovered" tone="violet" sub="Through idempotent retry">
+        <StatCard label="Fallback Events" tone="default" sub="Idempotent recovery">
           <AnimatedNumber value={autoRecovered} />
         </StatCard>
-
-        <StatCard label="Duplicate Debits Prevented" tone="cyan" sub="State verified at issuer">
-          <AnimatedNumber value={dupPrevented} />
-        </StatCard>
-
-        <StatCard label="Active Split" tone="default" sub="A / B / C split %">
-          <span className="text-lg font-mono">
-            {Math.round(gateways.A.traffic)}/{Math.round(gateways.B.traffic)}/{Math.round(gateways.C.traffic)}
-          </span>
+        <StatCard label="Average Latency" tone="default" sub="SLA limit: 500ms">
+          <AnimatedNumber value={routingLatency} suffix="ms" />
         </StatCard>
       </div>
 
-      {/* 5-Agent Autonomous Routing Pipeline */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-          <span>5-Agent Autonomous Routing Pipeline</span>
-          <span>{running ? "Active Lifecycle Loop" : "Continuous Observability"}</span>
+      <div className="console-command-main grid gap-5 xl:grid-cols-[1.35fr_0.85fr]">
+        <Card title="Live Transaction Stream" right={<span className="font-mono text-[11px] font-semibold tracking-wider text-cyan">LIVE</span>} bodyClass="p-0">
+          <TransactionsTable limit={14} />
+        </Card>
+
+        <Card title="Gateway Health">
+          <div className="console-gateway-list divide-y divide-border/50">
+            {Object.values(gateways).map((gateway) => (
+              <div key={gateway.id} className="grid grid-cols-[1fr_auto] items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <div>
+                  <div className="flex items-center gap-2 font-semibold text-foreground">
+                    <span className={`h-2 w-2 rounded-full ${gateway.risk === "HIGH" ? "bg-danger" : "bg-success"}`} />
+                    {gateway.name}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{gateway.processor}</div>
+                </div>
+                <div className="text-right font-mono text-xs">
+                  <div className={gateway.risk === "HIGH" ? "text-warning" : "text-success"}>
+                    {gateway.risk === "HIGH" ? "DEGRADED" : "ONLINE"}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">{gateway.latency} ms · {gateway.success.toFixed(1)}%</div>
+                </div>
+                <div className="col-span-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                  <div className="h-full rounded-full bg-cyan" style={{ width: `${gateway.health}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <section className="space-y-2">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">AI Agent Pipeline</h2>
+          <span className="font-mono text-[11px] text-muted-foreground">{running ? "Active lifecycle loop" : "Continuous observability"}</span>
         </div>
         <StageLoopBar />
-      </div>
+      </section>
 
-      {/* Main Grid: Routing Map & Live Events */}
-      <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <div className="space-y-6">
-          <Card title="Live Payment Routing Topology">
-            <RoutingMap detailed={true} />
-          </Card>
+      <div className="console-command-lower grid gap-5">
+        <Card title="Routing Activity">
+          <RoutingMap detailed={true} />
+        </Card>
 
-          <Card title="Autonomous Decision & Incident Log">
-            {log.length === 0 ? (
-              <p className="font-mono text-xs text-muted-foreground py-4 text-center">
-                No active incident telemetry. Click "Run live incident" to watch the autonomous recovery loop.
-              </p>
-            ) : (
-              <div className="space-y-2 font-mono text-xs max-h-56 overflow-y-auto pr-2">
-                {log.map((entry, idx) => (
-                  <div
-                    key={entry.ts + "-" + idx}
-                    className="flex items-start gap-3 rounded border border-border/50 bg-secondary/20 p-2"
-                  >
-                    <span className="text-muted-foreground shrink-0">{formatTime(entry.ts, true)}</span>
-                    <span className="text-foreground">{entry.text}</span>
+        <Card title="Recent Incidents & Activity">
+          {log.length > 0 ? (
+            <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+              {log.map((entry, idx) => (
+                <div key={entry.ts + "-" + idx} className="flex items-start gap-3 border-b border-border/40 py-2 last:border-0">
+                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{formatTime(entry.ts, true)}</span>
+                  <span className="text-xs leading-relaxed text-foreground">{entry.text}</span>
+                </div>
+              ))}
+            </div>
+          ) : incidents.length > 0 ? (
+            <div className="space-y-3">
+              {incidents.slice(0, 4).map((incident) => (
+                <div key={incident.id} className="flex items-start justify-between gap-3 border-b border-border/40 pb-3 last:border-0 last:pb-0">
+                  <div>
+                    <div className="font-mono text-xs font-semibold text-foreground">{incident.id} · Gateway {incident.gateway}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{incident.title}</div>
                   </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card title="Live Transaction Stream" right={<span className="font-mono text-[10px] text-cyan">REALTIME</span>}>
-            <TransactionsTable limit={14} />
-          </Card>
-        </div>
+                  <span className="font-mono text-[10px] uppercase text-success">{incident.status}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-4 text-center text-xs text-muted-foreground">No recent incident activity.</p>
+          )}
+        </Card>
       </div>
     </div>
   );

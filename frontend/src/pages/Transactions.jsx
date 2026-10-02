@@ -94,48 +94,56 @@ export function Transactions() {
         </div>
 
         {/* Transactions Table */}
-        <div className="font-mono text-[11px] overflow-x-auto">
-          <div className="grid min-w-[800px] grid-cols-[80px_100px_120px_100px_80px_60px_90px_140px_70px] gap-2 border-b border-border pb-2 text-[9px] uppercase tracking-wider text-muted-foreground">
-            <span>Time</span>
-            <span>Tx ID</span>
-            <span>Merchant</span>
-            <span>Amount</span>
-            <span>Method</span>
-            <span>GW</span>
-            <span>Status</span>
-            <span>Decision</span>
-            <span className="text-right">Latency</span>
-          </div>
-
-          {filtered.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              No matching transactions in buffer
-            </div>
-          ) : (
-            <div className="divide-y divide-border/40">
-              {filtered.map((tx) => (
-                <div
+        <div className="console-table-scroll overflow-x-auto">
+          <table className="console-full-transactions font-mono text-xs" aria-label="Transactions">
+            <thead>
+              <tr>
+                <th style={{ width: "8%" }}>Time</th>
+                <th style={{ width: "11%" }}>Tx ID</th>
+                <th style={{ width: "12%" }}>Merchant</th>
+                <th style={{ width: "10%" }}>Amount</th>
+                <th style={{ width: "8%" }}>Method</th>
+                <th style={{ width: "10%" }}>Gateway</th>
+                <th style={{ width: "9%" }}>Status</th>
+                <th style={{ width: "8%" }}>Latency</th>
+                <th style={{ width: "6%" }}>Retry</th>
+                <th style={{ width: "8%" }}>Risk</th>
+                <th style={{ width: "10%" }}>Routing Decision</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="py-12 text-center text-muted-foreground">No matching transactions in buffer</td>
+                </tr>
+              ) : filtered.map((tx) => (
+                <tr
                   key={tx.id}
                   onClick={() => setSelectedTx(tx)}
-                  className="grid min-w-[800px] grid-cols-[80px_100px_120px_100px_80px_60px_90px_140px_70px] items-center gap-2 py-2.5 transition-colors hover:bg-card/80 cursor-pointer"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedTx(tx);
+                    }
+                  }}
+                  tabIndex={0}
+                  className="cursor-pointer"
                 >
-                  <span className="text-muted-foreground">{formatTime(tx.ts)}</span>
-                  <span className="font-semibold text-foreground">{tx.id}</span>
-                  <span className="text-foreground">{tx.merchant}</span>
-                  <span className="text-foreground font-semibold">{formatInr(tx.amount)}</span>
-                  <span className="text-muted-foreground">{tx.method}</span>
-                  <span className="text-cyan font-bold">Gateway {tx.gateway}</span>
-                  <div>
-                    <StatusBadge status={tx.status} />
-                  </div>
-                  <span className="text-muted-foreground truncate">{tx.decision}</span>
-                  <span className={`text-right ${tx.latency > 500 ? "text-danger font-bold" : "text-muted-foreground"}`}>
-                    {tx.latency}ms
-                  </span>
-                </div>
+                  <td className="whitespace-nowrap text-muted-foreground">{formatTime(tx.ts)}</td>
+                  <td className="whitespace-nowrap font-semibold text-cyan">{tx.id}</td>
+                  <td className="truncate text-foreground" title={tx.merchant}>{tx.merchant}</td>
+                  <td className="whitespace-nowrap font-semibold text-foreground">{formatInr(tx.amount)}</td>
+                  <td className="whitespace-nowrap text-muted-foreground">{tx.method}</td>
+                  <td className="whitespace-nowrap font-semibold text-cyan">Gateway {tx.gateway}</td>
+                  <td><StatusBadge status={tx.status} /></td>
+                  <td className={`whitespace-nowrap ${tx.latency > 500 ? "font-bold text-danger" : "text-muted-foreground"}`}>{tx.latency}ms</td>
+                  <td className="text-muted-foreground">{tx.retry ? "1" : "0"}</td>
+                  <td><RiskBadge risk={tx.risk} /></td>
+                  <td className="truncate text-muted-foreground" title={tx.decision}>{tx.decision}</td>
+                </tr>
               ))}
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
       </Card>
 

@@ -36,13 +36,15 @@ class InMemoryCache:
             self._store[key] = (str(value), expiry)
             return True
 
-    def setnx(self, key: str, value: str) -> bool:
+    def setnx(self, key: str, value: str, ex: Optional[int] = None) -> bool:
         with self._lock:
-            if key in self._store:
-                val, expiry = self._store[key]
+            existing = self._store.get(key)
+            if existing is not None:
+                _, expiry = existing
                 if expiry is None or time.time() <= expiry:
                     return False
-            self._store[key] = (str(value), None)
+            expiry = time.time() + ex if ex is not None else None
+            self._store[key] = (str(value), expiry)
             return True
 
     def delete(self, key: str) -> bool:
@@ -115,14 +117,14 @@ class RedisClient:
                 self.is_connected = False
         return self._in_memory.set(key, str_val, ex=ex)
 
-    def setnx(self, key: str, value: Any) -> bool:
+    def setnx(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
         str_val = str(value) if not isinstance(value, str) else value
         if self.is_connected and self._client:
             try:
-                return bool(self._client.setnx(key, str_val))
+                return bool(self._client.set(key, str_val, nx=True, ex=ex))
             except Exception:
                 self.is_connected = False
-        return self._in_memory.setnx(key, str_val)
+        return self._in_memory.setnx(key, str_val, ex=ex)
 
     def delete(self, key: str) -> bool:
         if self.is_connected and self._client:

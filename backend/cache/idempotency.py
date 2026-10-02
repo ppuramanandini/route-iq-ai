@@ -15,7 +15,7 @@ def acquire_idempotency_lock(idempotency_key: str, ttl: int = DEFAULT_LOCK_TTL) 
     Returns True if lock acquired, False if another concurrent request holds it.
     """
     lock_key = f"{LOCK_PREFIX}{idempotency_key}"
-    return cache_client.setnx(lock_key, f"locked_{time.time()}")
+    return cache_client.setnx(lock_key, f"locked_{time.time()}", ex=max(1, int(ttl)))
 
 
 def release_idempotency_lock(idempotency_key: str) -> None:

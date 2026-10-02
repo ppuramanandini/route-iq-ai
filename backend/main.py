@@ -1,7 +1,7 @@
 import time
 import math
 import json
-import uuid
+import os
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,16 +9,15 @@ from pydantic import BaseModel
 from database import get_connection, init_db
 from monitoring.metrics import metrics
 from agents.orchestrator import orchestrator
-from api.agents import get_five_agents_definition
 from api.orchestrator_router import router as orchestrator_router
 from api.gateways import router as gateways_router
 from api.transactions import router as transactions_router
 from api.agents import router as agents_router
 from api.routing import router as routing_router
-from api.incidents import router as incidents_router
+from api.incidents import router as incidents_router, trigger_incident_v1
 from api.audit import router as audit_router
 from api.analytics import router as analytics_router
-from api.simulator import router as simulator_router
+from api.simulator import router as simulator_router, compute_simulation_evaluation
 
 app = FastAPI(
     title="SwitchRouteIQ API",
@@ -26,9 +25,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
+default_cors_origins = [
+    f"http://{host}:{port}"
+    for port in (5173, 5174, 5175)
+    for host in ("localhost", "127.0.0.1")
+]
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("SWITCHROUTEIQ_CORS_ORIGINS", ",".join(default_cors_origins)).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -208,11 +218,6 @@ def route_transaction(req: RoutePaymentRequest):
         "timestamp": res.get("timestamp", int(time.time() * 1000))
     }
 
-@app.get("/api/agents")
-def get_agents():
-    # Return definitions and active state of the EXACT 5 autonomous agents
-    return get_five_agents_definition()
-
 @app.get("/metrics")
 def get_prometheus_metrics():
     """Exposes Prometheus format metrics for scraper."""
@@ -233,65 +238,7 @@ def list_incidents():
 
 @app.post("/api/incidents/trigger")
 def trigger_incident():
-    now = int(time.time() * 1000)
-    conn = get_connection()
-    c = conn.cursor()
-
-    # Update Gateway A to high risk
-    c.execute("""
-    UPDATE gateways
-    SET risk_level = 'HIGH', success_rate = 90.8, latency_ms = 780, errors_pct = 7.1, timeouts_pct = 6.1
-    WHERE id = 'A'
-    """)
-
-    timeline = [
-        {"ts": now, "label": "Gateway degradation detected from observed telemetry"},
-        {"ts": now + 2000, "label": "Root cause diagnosed: timeout + latency anomaly (GW_504)"},
-        {"ts": now + 4000, "label": "What-If Simulation: 40% shift to Gateway B selected (98.1% simulated target)"},
-        {"ts": now + 6000, "label": "Guardrail PASSED · Idempotency check PASSED"},
-        {"ts": now + 8000, "label": "Autonomous shift executed: 40% Gateway A traffic shifted to Gateway B"},
-        {"ts": now + 12000, "label": "Recovery verified: 90.8% → 97.8% · Status RECOVERED"}
-    ]
-
-    c.execute("""
-    INSERT OR REPLACE INTO incidents (id, title, detected_at, gateway, success_rate, predicted_risk, root_cause, mitigation_action, status, timeline_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        "INC-2048",
-        "Gateway A degradation & autonomous self-healing",
-        now,
-        "A",
-        90.8,
-        "HIGH",
-        "Acquirer upstream timeout (GW_504)",
-        "40% traffic shift → Gateway B",
-        "IN PROGRESS",
-        json.dumps(timeline)
-    ))
-
-    # Add audit log
-    c.execute("""
-    INSERT INTO audit_trail (id, timestamp, action, from_gw, to_gw, amount, reason, confidence, simulation_evidence, guardrail, verification, agent)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        f"AUD-{uuid.uuid4().hex[:12].upper()}",
-        now,
-        "Traffic shifted",
-        "Gateway A",
-        "Gateway B",
-        "40%",
-        "Observed gateway degradation (success rate dropped to 90.8%)",
-        94,
-        "40% shift verified to restore target SLA (98.1%)",
-        "PASSED",
-        "RECOVERED",
-        "Audit, Incident & Continuous Learning Agent"
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return {"status": "INCIDENT_TRIGGERED", "incident_id": "INC-2048"}
+    return trigger_incident_v1()
 
 @app.get("/api/audit")
 def list_audit():
@@ -304,47 +251,7 @@ def list_audit():
 
 @app.post("/api/simulator/evaluate")
 def evaluate_simulator(req: EvaluateSimulationRequest):
-    shift_b = req.shift_b_pct
-    degrade_a = req.degrade_a_pct
-    max_shift = req.max_shift_guardrail
-
-    a_traffic = 90 - shift_b
-    b_traffic = 5 + shift_b
-    c_traffic = 5
-
-    a_success = 98.5 - degrade_a * 0.45
-    b_success = 98.8 - max(0, b_traffic - 45) * 0.25
-    c_success = 96.1
-
-    overall_success = (a_traffic * a_success + b_traffic * b_success + c_traffic * c_success) / 100
-    a_latency = 180 + degrade_a * 20
-    b_latency = 182 + max(0, b_traffic - 45) * 9
-    overall_latency = (a_traffic * a_latency + b_traffic * b_latency + 1550) / 100
-    overall_cost = (a_traffic * 1.8 + b_traffic * 2.1 + 7) / 100
-
-    tps = 1842
-    failures = round(((100 - overall_success) / 100) * tps * 60)
-    b_load = round((b_traffic / 100) * tps * 1 / 15)
-
-    within_sla = overall_latency <= 500
-    within_policy = shift_b <= max_shift
-
-    return {
-        "shift_pct": shift_b,
-        "split": {"A": a_traffic, "B": b_traffic, "C": c_traffic},
-        "simulated_success_rate": round(overall_success, 1),
-        "simulated_latency_ms": round(overall_latency),
-        "simulated_cost_inr": round(overall_cost, 2),
-        "simulated_failures_per_hour": failures,
-        "predicted_success_rate": round(overall_success, 1),  # legacy compatibility alias
-        "predicted_latency_ms": round(overall_latency),
-        "predicted_cost_inr": round(overall_cost, 2),
-        "predicted_failures_per_hour": failures,
-        "gateway_b_load_pct": b_load,
-        "within_sla": within_sla,
-        "within_guardrail_policy": within_policy,
-        "recommendation": "APPROVED" if (within_sla and within_policy) else "REJECTED_BY_GUARDRAIL"
-    }
+    return compute_simulation_evaluation(req)
 
 @app.get("/api/settings")
 def get_settings():

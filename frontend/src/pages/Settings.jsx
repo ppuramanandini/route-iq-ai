@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Save, Check, Shield, Sliders, Server, Zap } from "lucide-react";
+import { Save, Check } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { Card } from "../components/Card";
 
@@ -35,11 +35,27 @@ export function Settings() {
         }
       />
 
-      <form onSubmit={handleSave} className="grid gap-6 md:grid-cols-2">
+      <form onSubmit={handleSave} className="console-settings-layout grid gap-6">
+        <nav className="console-settings-nav" aria-label="Settings categories">
+          <h2>Configuration</h2>
+          <a href="#settings-routing">Routing</a>
+          <a href="#settings-risk">Risk</a>
+          <a href="#settings-sla">SLA</a>
+          <a href="#settings-fallback">Fallback</a>
+          <a href="#settings-environment">Environment</a>
+          <div className="console-settings-environment">
+            <span>ACTIVE ENVIRONMENT</span>
+            <strong>Sandbox</strong>
+            <small>Read-only session setting</small>
+          </div>
+        </nav>
+
+        <div className="console-settings-panels">
+        <div className="console-settings-grid grid gap-6">
         {/* Guardrail & Thresholds */}
         <Card title="Autonomous Guardrail Thresholds">
-          <div className="space-y-4 font-mono text-xs">
-            <div>
+          <div id="settings-routing" className="space-y-4 font-mono text-xs">
+            <div id="settings-risk">
               <div className="flex justify-between text-muted-foreground mb-1">
                 <span>Minimum Gateway Success Threshold</span>
                 <span className="font-bold text-foreground">{minHealth}%</span>
@@ -57,7 +73,7 @@ export function Settings() {
               </p>
             </div>
 
-            <div>
+            <div id="settings-sla">
               <div className="flex justify-between text-muted-foreground mb-1">
                 <span>Maximum Allowed Traffic Shift</span>
                 <span className="font-bold text-foreground">{maxShift}%</span>
@@ -99,7 +115,7 @@ export function Settings() {
 
         {/* Self-Healing & Safety Policy */}
         <Card title="Self-Healing Policy & Idempotency">
-          <div className="space-y-4 font-mono text-xs">
+          <div id="settings-fallback" className="space-y-4 font-mono text-xs">
             <div className="flex items-center justify-between border-b border-border/50 pb-3">
               <div>
                 <span className="font-semibold text-foreground">Autonomous Traffic Shifting</span>
@@ -158,6 +174,15 @@ export function Settings() {
             </div>
           </div>
         </Card>
+        </div>
+        <section id="settings-environment" className="console-settings-environment-panel">
+          <div>
+            <h3>Environment</h3>
+            <p>Routing configuration is currently scoped to the active sandbox session.</p>
+          </div>
+          <span>Sandbox · Read only</span>
+        </section>
+        </div>
       </form>
     </div>
   );

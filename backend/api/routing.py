@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from agents.route_validation_agent import RouteValidationAgent
@@ -8,6 +8,13 @@ from gateways.base import GatewayResponse
 from database import get_connection
 
 router = APIRouter(prefix="/api/v1/routing", tags=["Routing"])
+VALID_GATEWAYS = {"A", "B", "C"}
+
+
+def validate_gateway_ids(*gateway_ids: str) -> None:
+    invalid = [gateway_id for gateway_id in gateway_ids if gateway_id.strip().upper() not in VALID_GATEWAYS]
+    if invalid:
+        raise HTTPException(status_code=422, detail=f"Unsupported gateway ID: {invalid[0]}")
 
 class ValidateRouteRequest(BaseModel):
     primary_gateway: str
@@ -24,6 +31,7 @@ class TriggerFallbackRequest(BaseModel):
 
 @router.post("/validate")
 def validate_route_endpoint(req: ValidateRouteRequest):
+    validate_gateway_ids(req.primary_gateway, req.fallback_gateway)
     telemetry = TelemetryAgent()
     matrix = telemetry.get_health_matrix()
     validator = RouteValidationAgent()
@@ -37,6 +45,7 @@ def validate_route_endpoint(req: ValidateRouteRequest):
 
 @router.post("/fallback")
 def trigger_fallback_endpoint(req: TriggerFallbackRequest):
+    validate_gateway_ids(req.primary_gateway, req.fallback_gateway)
     coordinator = FallbackAgent()
     fake_primary_response = GatewayResponse(
         success=False,

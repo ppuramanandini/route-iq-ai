@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { Copy, Check, Terminal, Code2, Key, Send } from "lucide-react";
+import { Copy, Check, Send } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { Card } from "../components/Card";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export function Developer() {
   const [copiedKey, setCopiedKey] = useState(false);
@@ -22,7 +24,7 @@ export function Developer() {
   const handleTestRequest = async () => {
     setIsSending(true);
     try {
-      const resp = await fetch("http://localhost:8000/api/v1/orchestrator/route", {
+      const resp = await fetch(`${API_BASE_URL}/api/v1/orchestrator/route`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,7 +34,7 @@ export function Developer() {
           merchant_id: "merch_demo_foodapp",
           amount: Number(amount),
           currency: "INR",
-          payment_rail: method,
+          payment_method: method,
           idempotency_key: `order_dev_${Date.now()}`
         })
       });
@@ -62,24 +64,24 @@ export function Developer() {
 
   const snippets = {
     curl: `# Local Development Endpoint
-curl -X POST http://localhost:8000/api/v1/orchestrator/route \\
+curl -X POST ${API_BASE_URL}/api/v1/orchestrator/route \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "merchant_id": "merch_demo_foodapp",
     "amount": ${amount},
     "currency": "INR",
-    "payment_rail": "${method}",
+    "payment_method": "${method}",
     "idempotency_key": "order_demo_${Date.now()}"
   }'`,
     node: `// Local Development Endpoint
 const axios = require('axios');
 
-const response = await axios.post('http://localhost:8000/api/v1/orchestrator/route', {
+const response = await axios.post('${API_BASE_URL}/api/v1/orchestrator/route', {
   merchant_id: 'merch_demo_foodapp',
   amount: ${amount},
   currency: 'INR',
-  payment_rail: '${method}',
+  payment_method: '${method}',
   idempotency_key: 'order_demo_${Date.now()}'
 }, {
   headers: {
@@ -92,7 +94,7 @@ console.log('Routed Gateway:', response.data.final_gateway || response.data.sele
     python: `# Local Development Endpoint
 import requests
 
-url = "http://localhost:8000/api/v1/orchestrator/route"
+url = "${API_BASE_URL}/api/v1/orchestrator/route"
 headers = {
     "Authorization": "Bearer ${apiKey}",
     "Content-Type": "application/json"
@@ -101,7 +103,7 @@ payload = {
     "merchant_id": "merch_demo_foodapp",
     "amount": ${amount},
     "currency": "INR",
-    "payment_rail": "${method}",
+    "payment_method": "${method}",
     "idempotency_key": "order_demo_${Date.now()}"
 }
 
@@ -116,9 +118,32 @@ print("Routed:", res.json())`
         sub="Integrate SwitchRouteIQ into your merchant backend: credentials, endpoints and sandbox request/response examples."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="console-developer-grid grid gap-6">
         {/* Left Column: API Credentials & Endpoints */}
         <div className="space-y-6">
+          <Card title="API Status & Base URL">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Environment</div>
+                <div className="mt-1 flex items-center gap-2 font-semibold text-foreground">
+                  <span className="h-2 w-2 rounded-full bg-success" /> Sandbox configuration
+                </div>
+              </div>
+              <div className="min-w-[240px] flex-1">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Base URL</div>
+                <code className="mt-1 block font-mono text-sm text-cyan">{API_BASE_URL}</code>
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Available Endpoints">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/40 py-2 first:pt-0 last:border-0">
+              <span className="rounded border border-success/30 bg-success/10 px-2 py-1 font-mono text-[11px] font-bold text-success">POST</span>
+              <code className="font-mono text-sm text-foreground">/api/v1/orchestrator/route</code>
+              <span className="ml-auto text-xs text-muted-foreground">Payment route tester</span>
+            </div>
+          </Card>
+
           <Card title="API Credentials (Sandbox / Demo)">
             <div className="space-y-4 font-mono text-xs">
               <div>
@@ -160,7 +185,7 @@ print("Routed:", res.json())`
                 </label>
                 <input
                   type="text"
-                  defaultValue="http://localhost:8000/api/v1/webhooks/demo"
+                  defaultValue={`${API_BASE_URL}/api/v1/webhooks/demo`}
                   className="w-full rounded border border-border bg-input px-3 py-2 text-foreground"
                 />
               </div>
@@ -170,7 +195,7 @@ print("Routed:", res.json())`
           {/* Interactive Request Tester */}
           <Card title="Interactive Endpoint Console (Test Routing)">
             <div className="space-y-3 font-mono text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="console-developer-controls grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] uppercase text-muted-foreground block mb-1">
                     Payment Method

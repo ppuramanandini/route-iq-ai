@@ -7,6 +7,8 @@ import { Card } from "../components/Card";
 import { RoutingMap } from "../components/RoutingMap";
 import { TransactionsTable } from "../components/TransactionsTable";
 import { StageLoopBar } from "../components/StageLoopBar";
+import { StatCard } from "../components/StatCard";
+import { AnimatedNumber } from "../components/AnimatedNumber";
 
 const JOURNEY_STEPS = [
   "Customer",
@@ -27,6 +29,11 @@ const DEGRADATION_POINTS = [
 ];
 
 export function LiveRouting() {
+  const { overall, routingLatency, gateways, incidents, txs } = useSim();
+  const primaryGateway = Object.values(gateways).reduce((current, gateway) => gateway.traffic > current.traffic ? gateway : current);
+  const fallbackCount = txs.filter((transaction) => transaction.retry).length;
+  const activeIncidents = incidents.filter((incident) => !["RECOVERED", "FAILED"].includes(incident.status)).length;
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -34,11 +41,50 @@ export function LiveRouting() {
         sub="Payment traffic flowing from merchants through the routing engine to each processor"
       />
 
+      <div className="console-kpi-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard label="Routing Success" tone="good" sub="Overall authorization rate">
+          <AnimatedNumber value={overall} decimals={1} suffix="%" />
+        </StatCard>
+        <StatCard label="Primary Route" tone="cyan" sub="Highest current traffic share">
+          <span className="text-lg">{primaryGateway.name}</span>
+        </StatCard>
+        <StatCard label="Fallback Routes" tone="default" sub="Retries in current stream">
+          <AnimatedNumber value={fallbackCount} />
+        </StatCard>
+        <StatCard label="Average Latency" tone="default" sub="Routing decision path">
+          <AnimatedNumber value={routingLatency} suffix="ms" />
+        </StatCard>
+        <StatCard label="Active Incidents" tone={activeIncidents ? "warn" : "good"} sub="Detection and mitigation">
+          <AnimatedNumber value={activeIncidents} />
+        </StatCard>
+      </div>
+
+      <div className="console-route-gateways grid gap-4 md:grid-cols-3">
+        {Object.values(gateways).map((gateway) => (
+          <Card key={gateway.id} title={gateway.name}>
+            <div className="flex items-center justify-between gap-3">
+              <span className={`font-mono text-xs font-semibold ${gateway.risk === "HIGH" ? "text-warning" : "text-success"}`}>
+                {gateway.risk === "HIGH" ? "DEGRADED" : "ONLINE"}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">{gateway.traffic}% traffic</span>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-3 font-mono text-xs">
+              <div><div className="text-[10px] text-muted-foreground">HEALTH</div><div className="mt-1">{gateway.health}%</div></div>
+              <div><div className="text-[10px] text-muted-foreground">LATENCY</div><div className="mt-1">{gateway.latency}ms</div></div>
+              <div><div className="text-[10px] text-muted-foreground">SUCCESS</div><div className="mt-1">{gateway.success.toFixed(1)}%</div></div>
+            </div>
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full rounded-full bg-cyan" style={{ width: `${gateway.traffic}%` }} />
+            </div>
+          </Card>
+        ))}
+      </div>
+
       <Card title="Routing Network">
         <RoutingMap detailed={true} />
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="console-live-main grid gap-6">
         <PizzaJourneyDemo />
         <Card title="Live Event Stream">
           <TransactionsTable limit={16} />
@@ -109,7 +155,7 @@ function PizzaJourneyDemo() {
         </button>
       }
     >
-      <div className="grid gap-5 md:grid-cols-[220px_1fr]">
+      <div className="console-journey-grid grid gap-5">
         {/* Order Details Card */}
         <div className="space-y-2 rounded-sm border border-border bg-card/50 p-3 font-mono text-[11px]">
           <div className="mb-2 flex items-center gap-2 font-sans text-sm font-semibold">
@@ -138,13 +184,13 @@ function PizzaJourneyDemo() {
         </div>
 
         {/* Step-by-Step Route Progress */}
-        <div>
-          <div className="flex flex-col items-start gap-0.5">
+        <div className="console-journey-column">
+          <div className="console-journey-steps">
             {JOURNEY_STEPS.map((s, idx) => (
-              <div key={s} className="flex flex-col items-start">
+              <div key={s} className="console-journey-step">
                 <div
                   className={cn(
-                    "rounded-sm border px-3 py-1 text-xs transition-all duration-300",
+                    "console-journey-step-box rounded-sm border text-xs transition-all duration-300",
                     activeStep >= idx
                       ? "border-cyan/70 bg-cyan/10 text-foreground font-medium"
                       : "border-border text-muted-foreground"
@@ -155,7 +201,7 @@ function PizzaJourneyDemo() {
                 {idx < JOURNEY_STEPS.length - 1 && (
                   <ArrowDown
                     className={cn(
-                      "my-0.5 ml-3 h-3 w-3 transition-colors",
+                      "console-journey-arrow h-3 w-3 transition-colors",
                       activeStep > idx ? "text-cyan" : "text-border"
                     )}
                   />
